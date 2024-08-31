@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 
+// EMAIL MESSAGE
 exports.mailMessage = async(msg) => {
     try {
         if(!msg.subject){
