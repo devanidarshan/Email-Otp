@@ -18,6 +18,12 @@ const userSchema = mongoose.Schema({
         lowercase: true,
         match: [/.+\@.+\..+/, /@gmail.com|@outlook.com/,'Fill Valid Email Address...'],
     },
+    otp : {
+        type:String
+    },
+    otpExpires : {
+        type:Date
+    },
     isDelete: {
         type: Boolean,
         default: false

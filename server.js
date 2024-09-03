@@ -10,7 +10,7 @@ app.use(express.json());
 const port = process.env.PORT;                                               // Create Port
 
 // ROUTES
-const userRoute = require('./Src/Routes/user.route');
+const userRoute = require('./src/routes/user.route');
 app.use('/api', userRoute);
 
 // DATABASE CONNECTION
