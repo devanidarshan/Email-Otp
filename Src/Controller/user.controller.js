@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const { mailMessage } = require("../helpers/mail");
+const { StatusCodes } = require("http-status-codes");
+const { MSG } = require("../helpers/messages");
 
 // REGISTER USER
 exports.signupUser = async (req, res) => {
@@ -11,7 +13,11 @@ exports.signupUser = async (req, res) => {
     let user = await userService.getUser({ email: req.body.email });
     // console.log(user);
     if (user) {
-      res.status(400).json({ message: "User Already Registered..." });
+      res.json({
+        status: StatusCodes.BAD_REQUEST,
+        error: true,
+        message: MSG.ALREADY_REGISTERED,
+      });
     }
 
     // CONVERT HASH PASSWORD
@@ -24,9 +30,10 @@ exports.signupUser = async (req, res) => {
       password: hashpassword,
     });
 
-    
     // GENERATE TOKEN
-    let token = jwt.sign({ userId: user._id }, "User", {expiresIn: '5min'});
+    let token = jwt.sign({ userId: user._id }, process.env.KEY, {
+      expiresIn: "5min",
+    });
     // console.log(token);
 
     // GENERATE A 6 DIGIT OTP
@@ -66,35 +73,58 @@ exports.signupUser = async (req, res) => {
 
     await mailMessage(confirmationMail);
 
-    res.status(201).json({
-      user,
-      token,
-      message:"User Registered SuccessFully...Please check your EMAIL and OTP to confirm your account."});
+    res.json({
+      status: StatusCodes.CREATED,
+      error: false,
+      message: MSG.SUCCESSFUL_REGISTERED,
+      result: { user, token },
+    });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: `Internal Server Error...${console.error()}` });
+    res.json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: true,
+      message: MSG.INTERNAL_ERROR`${console.error()}`,
+    });
   }
 };
 
 // LOGIN USER
 exports.loginUser = async (req, res) => {
-    try {
-       let user = await userService.getUser({ email: req.body.email });
+  try {
+    let user = await userService.getUser({ email: req.body.email });
     // console.log(user);
     if (!user) {
-      res.status(400).json({ message: "Email Not Found..." });
+      res.json({
+        status: StatusCodes.NOT_FOUND,
+        error: true,
+        message: MSG.EMAIL_NOT_FOUND,
+      });
     }
     let checkpassword = await bcrypt.compare(req.body.password, user.password);
     // console.log(checkpasssword);
     if (!checkpassword) {
-      res.status(400).json({ message: "Password Not Match..." });
+      res.json({
+        status: StatusCodes.NOT_FOUND,
+        error: true,
+        message: MSG.PASSWORD_NOT_MATCH,
+      });
     }
-    let token = jwt.sign({ userId: user._id }, "User");
+    let token = jwt.sign({ userId: user._id }, process.env.KEY);
     // // console.log(token);
-    res.status(201).json({ token, message: "User Login SuccessFully..." });
+    res.json({
+      status: StatusCodes.CREATED,
+      error: false,
+      message: MSG.LOGIN_SUCCESSFULLY,
+      result: { user, token },
+    });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: `Internal Server Error...${console.error()}` });
+    res.json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: true,
+      message: MSG.INTERNAL_ERROR`${console.error()}`,
+    });
   }
 };
 
@@ -104,12 +134,25 @@ exports.getUserProfile = async (req, res) => {
     let user = await userService.getSpecificUser(req.query.userId);
     // console.log(user);
     if (!user) {
-      res.status(400).json({ message: "User's Profile Not Found..." });
+      res.json({
+        status: StatusCodes.NOT_FOUND,
+        error: true,
+        message: MSG.PROFILE_NOT_FOUND,
+      });
     }
-    res.status(200).json({ user, message: "User's Profile Information..." });
+    res.json({
+      status: StatusCodes.OK,
+      error: false,
+      message: MSG.PROFILE_INFORMATION,
+      result: { user },
+    });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ message: `Internal Server Error...${console.error()}` });
+    res.json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: true,
+      message: MSG.INTERNAL_ERROR`${console.error()}`,
+    });
   }
 };
 
@@ -117,13 +160,25 @@ exports.getUserProfile = async (req, res) => {
 exports.verifyOTP = async (req, res) => {
   try {
     console.log(req.body);
-    
-    let {otp} = req.body;
-    if(req.user.otp !== otp){
-      return res.json({message: 'Otp is not matched...'});
+
+    let { otp } = req.body;
+    if (req.user.otp !== otp) {
+      return res.json({
+        status: StatusCodes.BAD_REQUEST,
+        error: true,
+        message: MSG.OTP_NOT_MATCH,
+      });
     }
-    res.status(200).json({ message: "User verified successfully..." });
+    res.json({
+      status: StatusCodes.OK,
+      error: false,
+      message: MSG.VERIFIED_SUCCESSFULLY,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Internal Server Error...", error });
+    res.json({
+      status: StatusCodes.INTERNAL_SERVER_ERROR,
+      error: true,
+      message: MSG.INTERNAL_ERROR`${console.error()}`,
+    });
   }
 };
